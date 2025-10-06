@@ -106,25 +106,25 @@ echo "+========================+"
 echo "Usuarios criados com sucesso"
 echo "+========================+"
 echo " Adicionando Usuarios nos respectivos grupos"
-usermod -aG rafael health-guard
-usermod -aG marcela health-guard
-usermod -aG arthur health-guard
-usermod -aG andre health-guard
-usermod -aG davi health-guard
+usermod -aG health-guard rafael
+usermod -aG health-guard marcela
+usermod -aG health-guard arthur
+usermod -aG health-guard andre
+usermod -aG health-guard davi
 
-usermod -aG rafael devops
-usermod -aG marcela devops
-usermod -aG marcela back-end
-usermod -aG rafael back-end
+usermod -aG devops rafael
+usermod -aG devops marcela
+usermod -aG back-end marcela
+usermod -aG back-end rafael
 
-usermod -aG giovanna DBA
-usermod -aG  arthur DBA
+usermod -aG DBA giovanna
+usermod -aG DBA arthur
 
-usermod -aG giovanna back-end
-usermod -aG  arthur back-end
+usermod -aG back-end giovanna
+usermod -aG back-end arthur
 
-usermod -aG davi front-end
-usermod -aG andre front-end
+usermod -aG front-end davi
+usermod -aG front-end andre
 echo "+========================+"
 echo "os usuarios foram adicionados aos grupo"
 echo " "
