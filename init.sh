@@ -1,32 +1,41 @@
 #!/bin/bash
 
+# STEP 1 ------------------------------------------------------------------
+# VERIFICAÇÃO DE PRIVILÉGIOS DE EXECUÇÃO
+
 # Verificando se o usuário que está executando é root
 if [ "$EUID" -ne 0 ]; 
     then
     exec sudo "$0" "$@"
 fi
 
+# STEP 2 ------------------------------------------------------------------
 # CONFIGURAÇÃO DE GRUPOS E USUÁRIOS
+
+# Solicitando alteração de senha do usuário root
 read -p "Deseja alterar a senha do root? (S/N) " SENHA_ROOT
 
 if [ "$SENHA_ROOT" = "S" ] || [ "$SENHA_ROOT" = "s" ]; then 
     sudo passwd root
 fi
 
+# Solicitando alteração de senha do usuário ubuntu
 read -p "Deseja alterar a senha do ubuntu? (S/N) " SENHA_UBUNTU
 
 if [ "$SENHA_UBUNTU" = "S" ] || [ "$SENHA_UBUNTU" = "s" ]; then 
     sudo passwd ubuntu
 fi
 
-# set -e   # caso algum comando falhar ele para o script 
-
+# Verificação final de privilégios root
 if [ "$EUID" -ne 0 ]; then
   echo "Erro: Por favor, execute este script como root ou com sudo ."
   exit 1
 fi
 
-# Criação dos grupos
+# STEP 3 -------------------------------------------------------------------
+# CRIAÇÃO DE GRUPOS DO SISTEMA
+
+# Criando os grupos
 echo "+==================================================================+"
 echo "Criando grupos..."
 groupadd health-guard
@@ -43,7 +52,9 @@ echo "Grupos criados."
 echo "+==================================================================+"
 echo " "
 
-# Criação dos diretórios
+# STEP 4 -------------------------------------------------------------------
+# CRIAÇÃO DE DIRETÓRIOS DA APLICAÇÃO
+# Criando os diretórios
 echo "+==================================================================+"
 echo "Criando diretórios..."
 mkdir -p /home/sistema
@@ -59,6 +70,8 @@ echo "/home/sistema/site-institucional criado"
 echo "Diretórios criados em /home/sistema"
 echo "+==================================================================+"
 
+# STEP 5 -------------------------------------------------------------------
+# CRIAÇÃO DE PERMISSÕES E GRUPOS
 # Atribuindo os diretórios aos seus respectivos grupos
 echo "Atribuindo os diretorios aos seus respectivos grupos..."
 chown :health-guard /home/sistema/
@@ -72,6 +85,8 @@ chown -R :front-end /home/sistema/site-institucional/
 echo "Diretorio 'site-institucional' atribuido ao grupo front-end"
 echo "Concluido"
 
+# STEP 6 -------------------------------------------------------------------
+# CONFIGURAÇÃO DE PERMISSÕES DE USUÁRIO (ACL)
 # Adicionando configurações de permissões de usuário
 echo ""
 echo "+==================================================================+"
@@ -89,6 +104,8 @@ setfacl -m g:health-guard:r-x /home/sistema/aplicacao-python/
 echo "permissões configuradas."
 echo ""
 
+# STEP 7 -------------------------------------------------------------------
+# CRIAÇÃO DE USUÁRIOS DO SISTEMA
 # Criando usuarios
 echo "Criando usuarios..."
 echo ""
@@ -116,6 +133,8 @@ echo "+========================+"
 echo "Usuarios criados com sucesso"
 echo "+========================+"
 
+# STEP 8 -------------------------------------------------------------------
+# ATRIBUIÇÃO DE USUÁRIOS AOS GRUPOS
 # Atribuindo os usuários aos seus respectivos grupos
 echo " Adicionando Usuarios nos respectivos grupos"
 usermod -aG health-guard rafael
@@ -142,8 +161,8 @@ echo "os usuarios foram adicionados aos grupo"
 echo " "
 echo "Usuarios criados com sucesso!"
 
-
-# INSTALANDO PYTHON
+# STEP 9 -------------------------------------------------------------------
+# INSTALAÇÃO E CONFIGURAÇÃO DO PYTHON
 pip3 --version
 if [ $? = 0 ]; 
     then
@@ -164,7 +183,8 @@ else
     fi
 fi
 
-# INSTALANDO O DOCKER E PUXANDO IMAGEM DO MYSQL
+# STEP 10 -------------------------------------------------------------------
+# INSTALAÇÃO E CONFIGURAÇÃO DO DOCKER
 read -p "Deseja configurar o Docker? (S/N) " CONFIG_DOCKER
 if [ "$CONFIG_DOCKER" = "S" ] || [ "$CONFIG_DOCKER" = "s" ];  
     then
@@ -190,7 +210,8 @@ if [ "$CONFIG_DOCKER" = "S" ] || [ "$CONFIG_DOCKER" = "s" ];
     sudo docker images
 fi
 
-# CONFIGURANDO CONTAINER MYSQL E BANCO DE DADOS
+# STEP 11 -------------------------------------------------------------------
+# CONFIGURAÇÃO DO CONTAINER MYSQL E BANCO DE DADOS
 read -p "Deseja configurar o container MySQL e criar o banco? (S/N) " CONFIG_MYSQL
 if [ "$CONFIG_MYSQL" = "S" ] || [ "$CONFIG_MYSQL" = "s" ]; then
     
@@ -217,105 +238,79 @@ if [ "$CONFIG_MYSQL" = "S" ] || [ "$CONFIG_MYSQL" = "s" ]; then
     echo "Criando arquivo de schema do banco..."
     cat > setup-database.sql << 'EOF'
 DROP DATABASE IF EXISTS HealthGuard;
-
 CREATE DATABASE IF NOT EXISTS HealthGuard;
-
 USE HealthGuard;
 
 -- Label Empresa
 CREATE TABLE UnidadeDeAtendimento (
-
-idUnidadeDeAtendimento INT PRIMARY KEY AUTO_INCREMENT,
-
-razaoSocial VARCHAR(100) 			NOT NULL,
-
-nomeFantasia VARCHAR(100) 			DEFAULT NULL,
-
-cnpj CHAR(14) 						NOT NULL,
-
-unidadeGestora VARCHAR(100) 		NOT NULL
+    idUnidadeDeAtendimento INT PRIMARY KEY AUTO_INCREMENT,
+    razaoSocial VARCHAR(100) NOT NULL,
+    nomeFantasia VARCHAR(100) DEFAULT NULL,
+    cnpj CHAR(14) NOT NULL,
+    unidadeGestora VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE CodigoConfiguracao (
-idCodigoConfiguracao 		INT AUTO_INCREMENT,
-
-fkUnidadeDeAtendimento 		INT,
-CONSTRAINT pkCompostaCodigoValidacao PRIMARY KEY (idCodigoConfiguracao,fkUnidadeDeAtendimento),
-
-codigo 						CHAR(20),
-
-dataCriacao 				DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-dataExpiracao 				DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-statusCodigo 				VARCHAR(45) DEFAULT 'Pedente',
-CONSTRAINT chkStatusCodigoConfiguracao CHECK (statusCodigo in('Pedente','Aceito','Expirado')),
-
-CONSTRAINT fkCodigoConfiguracaoUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
+    idCodigoConfiguracao INT AUTO_INCREMENT,
+    fkUnidadeDeAtendimento INT,
+    CONSTRAINT pkCompostaCodigoValidacao PRIMARY KEY (idCodigoConfiguracao,fkUnidadeDeAtendimento),
+    codigo CHAR(20),
+    dataCriacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    dataExpiracao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    statusCodigo VARCHAR(45) DEFAULT 'Pedente',
+    CONSTRAINT chkStatusCodigoConfiguracao CHECK (statusCodigo in('Pedente','Aceito','Expirado')),
+    CONSTRAINT fkCodigoConfiguracaoUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
 );
 
+-- TABELA DAC CORRIGIDA (com statusDac)
 CREATE TABLE Dac (
-idDac 						INT AUTO_INCREMENT,
-
-fkUnidadeDeAtendimento 		INT,
-CONSTRAINT pkCompostaDac PRIMARY KEY (idDac,fkUnidadeDeAtendimento),
-
-nomeDeIdentificacao 		VARCHAR(100) NOT NULL,
-
-statusDac VARCHAR(45) 		DEFAULT 'Inativo',
-CONSTRAINT chkStatusDac CHECK (statusDac in('Ativo','Inativo','Excluido')),
-
-codigoValidacao VARCHAR(256) 	NOT NULL,
-
-CONSTRAINT fkDacUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
+    idDac INT AUTO_INCREMENT,
+    fkUnidadeDeAtendimento INT,
+    CONSTRAINT pkCompostaDac PRIMARY KEY (idDac,fkUnidadeDeAtendimento),
+    nomeDeIdentificacao VARCHAR(100) NOT NULL,
+    statusDac VARCHAR(45) DEFAULT 'Inativo',  
+    CONSTRAINT chkStatusDac CHECK (statusDac in('Ativo','Inativo','Excluido')),
+    codigoValidacao VARCHAR(256) NOT NULL,
+    CONSTRAINT fkDacUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
 );
 
 CREATE TABLE MedicoesDisponiveis (
-idMedicoesDisponiveis 	INT PRIMARY KEY AUTO_INCREMENT,
-
-nomeDaMedicao 			VARCHAR(100) NOT NULL,
-
-unidadeDeMedida 	VARCHAR(45) NOT NULL
+    idMedicoesDisponiveis INT PRIMARY KEY AUTO_INCREMENT,
+    nomeDaMedicao VARCHAR(100) NOT NULL,
+    unidadeDeMedida VARCHAR(45) NOT NULL
 );
 
 CREATE TABLE MedicoesSelecionadas (
-idMedicoesSelecionadas 	INT AUTO_INCREMENT,
-
-fkUnidadeDeAtendimento 	INT,
-
-fkDac 					INT,
-
-fkMedicoesDisponiveis 	INT,
-CONSTRAINT pkCompostaMedicoesSelecionadas PRIMARY KEY (idMedicoesSelecionadas,fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponiveis),
-
-dataConfiguracao 		DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento),
-CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
-CONSTRAINT fkMedicoesSelecionadasMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis)
+    idMedicoesSelecionadas INT AUTO_INCREMENT,
+    fkUnidadeDeAtendimento INT,
+    fkDac INT,
+    fkMedicoesDisponiveis INT,
+    CONSTRAINT pkCompostaMedicoesSelecionadas PRIMARY KEY (idMedicoesSelecionadas,fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponiveis),
+    dataConfiguracao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento),
+    CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
+    CONSTRAINT fkMedicoesSelecionadasMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis)
 );
 
 CREATE TABLE Leitura (
-idLeitura 					INT AUTO_INCREMENT,
-fkMedicoesDisponiveis 		INT,
-fkMedicoesSelecionadas 		INT,
-fkDac 						INT,
-fkUnidadeDeAtendimento 		INT,
-CONSTRAINT pkCompostaLeitura PRIMARY KEY (idLeitura,fkMedicoesDisponiveis,fkMedicoesSelecionadas,fkDac,fkUnidadeDeAtendimento),
-medidaCapturada 			VARCHAR(45) NOT NULL,
-dataCaptura 				DATETIME DEFAULT CURRENT_TIMESTAMP,
-fkAlerta 					INT DEFAULT NULL,
-fkMetricaAlerta 			INT DEFAULT NULL,
-fkMedicoesDisponiveisAlerta INT DEFAULT NULL,
-fkMedicoesSelecionadasAlerta INT DEFAULT NULL,
-fkDacAlerta 				INT DEFAULT NULL,
-fkUnidadeDeAtendimentoAlerta INT DEFAULT NULL,
-
--- FOREIGN KEYS das PKS
-CONSTRAINT fkLeituraMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis),
-CONSTRAINT fkLeituraMedicoesSelecionadas FOREIGN KEY (fkMedicoesSelecionadas) REFERENCES MedicoesSelecionadas(idMedicoesSelecionadas),
-CONSTRAINT fkLeituraDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
-CONSTRAINT fkLeituraUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
+    idLeitura INT AUTO_INCREMENT,
+    fkMedicoesDisponiveis INT,
+    fkMedicoesSelecionadas INT,
+    fkDac INT,
+    fkUnidadeDeAtendimento INT,
+    CONSTRAINT pkCompostaLeitura PRIMARY KEY (idLeitura,fkMedicoesDisponiveis,fkMedicoesSelecionadas,fkDac,fkUnidadeDeAtendimento),
+    medidaCapturada VARCHAR(45) NOT NULL,
+    dataCaptura DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fkAlerta INT DEFAULT NULL,
+    fkMetricaAlerta INT DEFAULT NULL,
+    fkMedicoesDisponiveisAlerta INT DEFAULT NULL,
+    fkMedicoesSelecionadasAlerta INT DEFAULT NULL,
+    fkDacAlerta INT DEFAULT NULL,
+    fkUnidadeDeAtendimentoAlerta INT DEFAULT NULL,
+    CONSTRAINT fkLeituraMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis),
+    CONSTRAINT fkLeituraMedicoesSelecionadas FOREIGN KEY (fkMedicoesSelecionadas) REFERENCES MedicoesSelecionadas(idMedicoesSelecionadas),
+    CONSTRAINT fkLeituraDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
+    CONSTRAINT fkLeituraUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
 );
 
 DROP USER IF EXISTS logan;
@@ -348,8 +343,9 @@ VALUES (1, 'ABC123DEF456GHI78901', '2025-12-31 23:59:59', 'Pedente');
 INSERT INTO CodigoConfiguracao (fkUnidadeDeAtendimento, codigo, dataExpiracao, statusCodigo)
 VALUES (2, 'XYZ987LMN654OPQ32102', '2025-10-31 23:59:59', 'Aceito');
 
-INSERT INTO Dac (fkUnidadeDeAtendimento,codigoValidacao,nomeDeIdentificacao) VALUES
-(1,"ABC123DEF456GHI78901","Arthur Machine");
+-- INSERÇÃO CORRIGIDA: Incluir statusDac
+INSERT INTO Dac (fkUnidadeDeAtendimento,codigoValidacao,nomeDeIdentificacao,statusDac) VALUES
+(1,"ABC123DEF456GHI78901","Arthur Machine", "Inativo");
 
 INSERT INTO MedicoesSelecionadas (fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponiveis) VALUES
 (1,1,1),
@@ -380,21 +376,21 @@ EOF
     echo "Database: HealthGuard"
 fi
 
-# CONFIGURANDO MÁQUINA DE CAPTURA 
-# PARA EXECUTAR O SCRIPT DE CAPTURA EM PYTHON
-# CLONANDO E CONFIGURANDO APLICAÇÃO PYTHON
+# STEP 12 -------------------------------------------------------------------
+# CONFIGURAÇÃO DA APLICAÇÃO PYTHON DE CAPTURA
 echo "Configurando aplicação Python de captura..."
 
 # Clonando o repositório se não existir
 if [ ! -d "Atividade-SO" ]; then
     echo "Clonando repositório da aplicação Python..."
-    git clone https://github.com/Arthur-Amaral-cloud/Automatizando-HealthGuard.git
+    git clone https://github.com/andreleao-dev/Aplicacao-Captura-Python.git
 fi
 
 # Entrando no diretório da aplicação
-cd Atividade-SO
+cd Aplicacao-Captura-Python
 
-# CONFIGURANDO CREDENCIAIS DO BANCO
+# STEP 13 ------------------------------------------------------------------- 
+# CONFIGURAÇÃO DAS CREDENCIAIS DO BANCO
 echo ''
 echo "Configure as credenciais de acesso ao MySQL:"
 
@@ -433,7 +429,8 @@ EOF
     fi
 done
 
-# Configurarando ambiente virtual e dependências
+# STEP 14 ------------------------------------------------------------------- 
+# CONFIGURAÇÃO DO AMBIENTE VIRTUAL PYTHON
 echo "Configurando ambiente virtual..."
 python3 -m venv venv-ambiente-Captura
 source venv-ambiente-Captura/bin/activate
@@ -448,6 +445,8 @@ else
     echo "Bibliotecas essenciais instaladas: psutil, mysql-connector-python, python-dotenv, tabulate"
 fi
 
+# STEP 15 ------------------------------------------------------------------- 
+# INICIALIZAÇÃO DA CAPTURA DE DADOS
 read -p "Deseja iniciar o programa de captura? (S/N) " START
 if [ "$START" = "S" ] || [ "$START" = "s" ]; then
     echo "Iniciando captura de dados em segundo plano..."
@@ -461,8 +460,8 @@ fi
 # Saindo do diretório da aplicação
 cd ..
 
-
-# IMPLEMENTANDO WEB-DATA-VIZ
+# STEP 16 ------------------------------------------------------------------- 
+# IMPLEMENTAÇÃO DA APLICAÇÃO WEB DATA-VIZ
 echo "Configurando aplicação web data-viz..."
 
 # Criando Dockerfile para a aplicação web
