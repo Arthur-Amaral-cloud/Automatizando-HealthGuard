@@ -19,7 +19,7 @@ if [ "$SENHA_UBUNTU" = "S" ] || [ "$SENHA_UBUNTU" = "s" ]; then
     sudo passwd ubuntu
 fi
 
-set -e   # caso algum comando falhar ele para o script 
+# set -e   # caso algum comando falhar ele para o script 
 
 if [ "$EUID" -ne 0 ]; then
   echo "Erro: Por favor, execute este script como root ou com sudo ."
@@ -143,7 +143,7 @@ echo " "
 echo "Usuarios criados com sucesso!"
 
 
-# INSTALANDO PYTHON - VERSÃO CORRIGIDA
+# INSTALANDO PYTHON
 pip3 --version
 if [ $? = 0 ]; 
     then
