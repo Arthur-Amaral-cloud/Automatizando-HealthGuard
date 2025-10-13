@@ -262,11 +262,9 @@ CREATE TABLE CodigoConfiguracao (
     CONSTRAINT fkCodigoConfiguracaoUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
 );
 
--- TABELA DAC CORRIGIDA (com statusDac)
 CREATE TABLE Dac (
-    idDac INT AUTO_INCREMENT,
+    idDac INT PRIMARY KEY AUTO_INCREMENT, 
     fkUnidadeDeAtendimento INT,
-    CONSTRAINT pkCompostaDac PRIMARY KEY (idDac,fkUnidadeDeAtendimento),
     nomeDeIdentificacao VARCHAR(100) NOT NULL,
     statusDac VARCHAR(45) DEFAULT 'Inativo',  
     CONSTRAINT chkStatusDac CHECK (statusDac in('Ativo','Inativo','Excluido')),
@@ -283,12 +281,12 @@ CREATE TABLE MedicoesDisponiveis (
 CREATE TABLE MedicoesSelecionadas (
     idMedicoesSelecionadas INT AUTO_INCREMENT,
     fkUnidadeDeAtendimento INT,
-    fkDac INT,
+    fkDac INT,  -- ← AGORA FUNCIONA: referencia idDac que é PRIMARY KEY
     fkMedicoesDisponiveis INT,
     CONSTRAINT pkCompostaMedicoesSelecionadas PRIMARY KEY (idMedicoesSelecionadas,fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponiveis),
     dataConfiguracao DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento),
-    CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
+    CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),  -- ← AGORA CORRETO
     CONSTRAINT fkMedicoesSelecionadasMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis)
 );
 
@@ -343,7 +341,6 @@ VALUES (1, 'ABC123DEF456GHI78901', '2025-12-31 23:59:59', 'Pedente');
 INSERT INTO CodigoConfiguracao (fkUnidadeDeAtendimento, codigo, dataExpiracao, statusCodigo)
 VALUES (2, 'XYZ987LMN654OPQ32102', '2025-10-31 23:59:59', 'Aceito');
 
--- INSERÇÃO CORRIGIDA: Incluir statusDac
 INSERT INTO Dac (fkUnidadeDeAtendimento,codigoValidacao,nomeDeIdentificacao,statusDac) VALUES
 (1,"ABC123DEF456GHI78901","Arthur Machine", "Inativo");
 
