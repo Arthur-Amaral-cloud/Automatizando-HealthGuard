@@ -581,7 +581,14 @@ python3 -m venv venv-ambiente-Captura
 source venv-ambiente-Captura/bin/activate
 
 echo "Instalando bibliotecas..."
-pip install -r requirements.txt
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+    echo "Bibliotecas do requirements.txt instaladas!"
+else
+    echo "requirements.txt não encontrado, instalando bibliotecas essenciais..."
+    pip install psutil mysql-connector-python python-dotenv tabulate
+    echo "Bibliotecas essenciais instaladas: psutil, mysql-connector-python, python-dotenv, tabulate"
+fi
 
 read -p "Deseja iniciar o programa de captura? (S/N) " START
 if [ "$START" = "S" ] || [ "$START" = "s" ]; then
