@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Verificando se o usuário que está executando é root
+if [ "$EUID" -ne 0 ]; 
+    then
+    exec sudo "$0" "$@"
+fi
+
 # CONFIGURAÇÃO DE GRUPOS E USUÁRIOS
 read -p "Deseja alterar a senha do root? (S/N) " SENHA_ROOT
 
