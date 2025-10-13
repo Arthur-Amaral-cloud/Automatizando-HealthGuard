@@ -565,13 +565,13 @@ fi
 echo "Configurando aplicação Python de captura..."
 
 # Clonando o repositório se não existir
-if [ ! -d "Aplicacao-Python" ]; then
+if [ ! -d "Atividade-SO" ]; then
     echo "Clonando repositório da aplicação Python..."
-    git clone https://github.com/HealthGuard-Group/Aplicacao-Python.git
+    git clone https://github.com/Arthur-Amaral-cloud/Automatizando-HealthGuard.git
 fi
 
 # Entrando no diretório da aplicação
-cd Aplicacao-Python
+cd Atividade-SO
 
 # CONFIGURANDO CREDENCIAIS DO BANCO
 echo ''
