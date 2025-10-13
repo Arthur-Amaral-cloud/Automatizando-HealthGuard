@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # STEP 1 ------------------------------------------------------------------
 # VERIFICAÇÃO DE PRIVILÉGIOS DE EXECUÇÃO
 
@@ -279,14 +277,13 @@ CREATE TABLE MedicoesDisponiveis (
 );
 
 CREATE TABLE MedicoesSelecionadas (
-    idMedicoesSelecionadas INT AUTO_INCREMENT,
+    idMedicoesSelecionadas INT PRIMARY KEY AUTO_INCREMENT,
     fkUnidadeDeAtendimento INT,
-    fkDac INT,  -- ← AGORA FUNCIONA: referencia idDac que é PRIMARY KEY
+    fkDac INT,
     fkMedicoesDisponiveis INT,
-    CONSTRAINT pkCompostaMedicoesSelecionadas PRIMARY KEY (idMedicoesSelecionadas,fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponiveis),
     dataConfiguracao DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento),
-    CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),  -- ← AGORA CORRETO
+    CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
     CONSTRAINT fkMedicoesSelecionadasMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis)
 );
 
@@ -327,14 +324,12 @@ INSERT INTO MedicoesDisponiveis (nomeDaMedicao,unidadeDeMedida) VALUES
 ('Espaço restante do disco','GB'),
 ('Espaço do Disco','GB');
 
--- Inserções na tabela UnidadeDeAtendimento
 INSERT INTO UnidadeDeAtendimento (razaoSocial, nomeFantasia, cnpj, unidadeGestora)
 VALUES ('Hospital Vida Ltda', 'Hospital Vida', '12345678000195', 'Secretaria da Saúde');
 
 INSERT INTO UnidadeDeAtendimento (razaoSocial, nomeFantasia, cnpj, unidadeGestora)
 VALUES ('Clínica Bem Estar SA', 'Clínica Bem Estar', '98765432000177', 'Secretaria da Saúde');
 
--- Inserções na tabela CodigoConfiguracao
 INSERT INTO CodigoConfiguracao (fkUnidadeDeAtendimento, codigo, dataExpiracao, statusCodigo)
 VALUES (1, 'ABC123DEF456GHI78901', '2025-12-31 23:59:59', 'Pedente');
 
@@ -352,7 +347,6 @@ INSERT INTO MedicoesSelecionadas (fkUnidadeDeAtendimento,fkDac,fkMedicoesDisponi
 (1,1,5),
 (1,1,6),
 (1,1,7);
-
 EOF
 
     # Executando o script SQL no container
@@ -378,7 +372,7 @@ fi
 echo "Configurando aplicação Python de captura..."
 
 # Clonando o repositório se não existir
-if [ ! -d "Atividade-SO" ]; then
+if [ ! -d "Aplicacao-Captura-Python" ]; then
     echo "Clonando repositório da aplicação Python..."
     git clone https://github.com/andreleao-dev/Aplicacao-Captura-Python.git
 fi
@@ -418,11 +412,10 @@ EOF
 
     if [ "$INICIAR_API" = "S" ] || [ "$INICIAR_API" = "s" ]; then 
         echo '.env Criado'
-        break  # Sai do loop e continua o script
+        break
     else 
         echo 'RECONFIGURANDO CREDENCIAIS...'
         echo ''
-        # O loop vai repetir automaticamente
     fi
 done
 
@@ -447,11 +440,12 @@ fi
 read -p "Deseja iniciar o programa de captura? (S/N) " START
 if [ "$START" = "S" ] || [ "$START" = "s" ]; then
     echo "Iniciando captura de dados em segundo plano..."
-    python insertCaptura.py &
-    echo "Captura rodando em background! "
+    python3 insertCaptura.py &
+    CAPTURA_PID=$!
+    echo "Captura rodando em background! (PID: $CAPTURA_PID)"
     echo "A aplicação web será iniciada a seguir..."
 else
-    echo "Captura não iniciada. Você pode executar manualmente depois com: python insertCaptura.py"
+    echo "Captura não iniciada. Você pode executar manualmente depois com: python3 insertCaptura.py"
 fi
 
 # Saindo do diretório da aplicação
@@ -460,6 +454,10 @@ cd ..
 # STEP 16 ------------------------------------------------------------------- 
 # IMPLEMENTAÇÃO DA APLICAÇÃO WEB DATA-VIZ
 echo "Configurando aplicação web data-viz..."
+
+# Parando container existente se houver
+sudo docker stop ContainerSite 2>/dev/null || true
+sudo docker rm ContainerSite 2>/dev/null || true
 
 # Criando Dockerfile para a aplicação web
 cat > Dockerfile-Node << 'EOF'
@@ -485,14 +483,10 @@ echo "Iniciando container da aplicação web..."
 sudo docker run -d --name ContainerSite -p 3333:3333 imagem-node:v1
 
 echo "Aguardando aplicação inicializar..."
-sleep 10
+sleep 15
 
 # Verificando se o container está rodando
 echo "Status do container:"
 sudo docker ps | grep ContainerSite
 
 echo "Aplicação web deve estar disponível em: http://localhost:3333"
-
-
-
-    
