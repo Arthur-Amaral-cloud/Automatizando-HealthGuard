@@ -290,7 +290,7 @@ CONSTRAINT pkCompostaMedicoesSelecionadas PRIMARY KEY (idMedicoesSelecionadas,fk
 
 dataConfiguracao 		DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES Dac(fkUnidadeDeAtendimento),
+CONSTRAINT fkMedicoesSelecionadasUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento),
 CONSTRAINT fkMedicoesSelecionadasDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
 CONSTRAINT fkMedicoesSelecionadasMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis)
 );
@@ -312,10 +312,10 @@ fkDacAlerta 				INT DEFAULT NULL,
 fkUnidadeDeAtendimentoAlerta INT DEFAULT NULL,
 
 -- FOREIGN KEYS das PKS
-CONSTRAINT fkLeituraMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesSelecionadas(fkMedicoesDisponiveis),
+CONSTRAINT fkLeituraMedicoesDisponiveis FOREIGN KEY (fkMedicoesDisponiveis) REFERENCES MedicoesDisponiveis(idMedicoesDisponiveis),
 CONSTRAINT fkLeituraMedicoesSelecionadas FOREIGN KEY (fkMedicoesSelecionadas) REFERENCES MedicoesSelecionadas(idMedicoesSelecionadas),
-CONSTRAINT fkLeituraDac FOREIGN KEY (fkDac) REFERENCES MedicoesSelecionadas(fkDac),
-CONSTRAINT fkLeituraUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES MedicoesSelecionadas(fkUnidadeDeAtendimento)
+CONSTRAINT fkLeituraDac FOREIGN KEY (fkDac) REFERENCES Dac(idDac),
+CONSTRAINT fkLeituraUnidadeDeAtendimento FOREIGN KEY (fkUnidadeDeAtendimento) REFERENCES UnidadeDeAtendimento(idUnidadeDeAtendimento)
 );
 
 DROP USER IF EXISTS logan;
